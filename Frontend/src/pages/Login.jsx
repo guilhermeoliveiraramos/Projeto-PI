@@ -19,31 +19,14 @@ export function Login() {
     setMensagem({ tipo: '', texto: '' });
 
     if (modoCadastro) {
-      // MODO CADASTRO (POST /api/usuarios)
-      try {
-        await api.post('/usuarios', {
-          nomeUsuario,
-          cargo,
-          email,
-          senha,
-        });
-
-        setMensagem({ tipo: 'sucesso', texto: 'Conta criada com sucesso! Faça login para entrar.' });
-        setModoCadastro(false); // Volta para a tela de login automaticamente
-        setSenha('');
-      } catch (err) {
-        console.error('Erro ao cadastrar:', err);
-        setMensagem({ tipo: 'erro', texto: 'Erro ao criar conta. Verifique se o e-mail já está em uso.' });
-      }
-          if (modoCadastro) {
-      // Expressão Regular (Regex) para validar e-mail no React
+      // Valida o formato do e-mail antes de enviar
       const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-
       if (!emailRegex.test(email)) {
         setMensagem({ tipo: 'erro', texto: 'Digite um e-mail válido (ex: nome@dominio.com)!' });
-        return; // Para a execução aqui e não envia para o Java
+        return;
       }
 
+      // MODO CADASTRO (POST /api/usuarios)
       try {
         await api.post('/usuarios', {
           nomeUsuario,
@@ -56,11 +39,12 @@ export function Login() {
         setModoCadastro(false);
         setSenha('');
       } catch (err) {
-        const mensagemServidor = err.response?.data || 'Erro ao criar conta.';
-        setMensagem({ tipo: 'erro', texto: mensagemServidor });
+        console.error('Erro ao cadastrar:', err);
+        const textoErro = typeof err.response?.data === 'string'
+          ? err.response.data
+          : err.response?.data?.message || 'Erro ao criar conta. Verifique se o e-mail já está em uso.';
+        setMensagem({ tipo: 'erro', texto: textoErro });
       }
-    }
-
     } else {
       // MODO LOGIN (POST /api/usuarios/login)
       try {
@@ -119,7 +103,6 @@ export function Login() {
           </div>
         )}
 
-       
         {modoCadastro && (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>

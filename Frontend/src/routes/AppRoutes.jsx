@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
 import { Home } from '../pages/Home';
 import { Usuarios } from '../pages/Usuarios';
@@ -11,15 +11,16 @@ import { Arquivos } from '../pages/Arquivos';
 // Componente que verifica se existe um usuário salvo no navegador
 function RotaPrivada({ children }) {
   const usuarioLogado = localStorage.getItem('usuarioLogado');
-  return usuarioLogado ? children : <Navigate to="/" />;
+  return usuarioLogado ? children : <Navigate to="/" replace />;
 }
 
 export function AppRoutes() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
-        {/* Rota inicial do site agora abre direto no Login */}
+        {/* Rota inicial e rota /login abrem a tela de Login */}
         <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
 
         {/* Rotas internas protegidas (exigem login) */}
         <Route element={<RotaPrivada><MainLayout /></RotaPrivada>}>
@@ -30,7 +31,10 @@ export function AppRoutes() {
           <Route path="/arquivos" element={<Arquivos />} />
           <Route path="/usuarios" element={<Usuarios />} />
         </Route>
+
+        {/* Qualquer rota desconhecida volta para o Login */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
