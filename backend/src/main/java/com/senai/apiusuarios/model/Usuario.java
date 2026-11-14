@@ -8,28 +8,40 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "usuario") // Garante o nome correto da tabela no banco
+@Table(name = "usuario")
 public class Usuario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario", nullable = false) // Alinha o nome do campo e define como obrigatório
+    @Column(name = "id_usuario", nullable = false)
     private Long idUsuario;
 
-    @Column(name = "nome_usuario", length = 100, nullable = false) // Define o nome, tamanho máximo e obrigatoriedade
+    @Column(name = "nome_usuario", length = 100, nullable = false)
     private String nomeUsuario;
 
-    // Construtor padrão (obrigatóriov pelo JPA)
+    @Column(name = "cargo", length = 80, nullable = false)
+    private String cargo;
+
+    @Column(name = "email", length = 120, nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "senha", length = 255, nullable = false)
+    private String senha;
+
+    // Construtor padrão (obrigatório pelo JPA)
     public Usuario() {
     }
 
     // Construtor completo
-    public Usuario(Long idUsuario, String nomeUsuario) {
+    public Usuario(Long idUsuario, String nomeUsuario, String cargo, String email, String senha) {
         this.idUsuario = idUsuario;
         this.nomeUsuario = nomeUsuario;
+        this.cargo = cargo;
+        this.email = email;
+        this.senha = senha;
     }
 
-    // Getters e Setters atualizados
+    // Getters e Setters
     public Long getIdUsuario() {
         return idUsuario;
     }
@@ -44,5 +56,29 @@ public class Usuario {
 
     public void setNomeUsuario(String nomeUsuario) {
         this.nomeUsuario = nomeUsuario;
+    }
+
+    public String getCargo() {
+        return cargo;
+    }
+
+    public void setCargo(String cargo) {
+        this.cargo = cargo;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
     }
 }

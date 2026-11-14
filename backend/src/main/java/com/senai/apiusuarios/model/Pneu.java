@@ -14,12 +14,16 @@ public class Pneu {
     @Column(name = "modelo_pneu", length = 100, nullable = false)
     private String modeloPneu;
 
+    @Column(name = "quantidade", nullable = false)
+    private Integer quantidade;
+
     public Pneu() {
     }
 
-    public Pneu(Long idPneu, String modeloPneu) {
+    public Pneu(Long idPneu, String modeloPneu, Integer quantidade) {
         this.idPneu = idPneu;
         this.modeloPneu = modeloPneu;
+        this.quantidade = quantidade;
     }
 
     public Long getIdPneu() {
@@ -36,5 +40,13 @@ public class Pneu {
 
     public void setModeloPneu(String modeloPneu) {
         this.modeloPneu = modeloPneu;
+    }
+
+    public Integer getQuantidade() {
+        return quantidade;
+    }
+
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
     }
 }
