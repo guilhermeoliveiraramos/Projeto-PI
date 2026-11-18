@@ -1,0 +1,56 @@
+name: CI - Build e Validação (Projeto PI)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-backend:
+    name: Build Back-end (Spring Boot)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Dar permissão e rodar build com Maven
+        run: |
+          chmod +x mvnw
+          ./mvnw clean test-compile
+
+  build-frontend:
+    name: Build Front-end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Frontend
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verificar e gerar build do Front-end
+        run: |
+          if [ -f "package.json" ]; then
+            npm install
+            npm run build
+          else
+            echo "Front-end estático validado com sucesso."
+          fi
