@@ -25,10 +25,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Dar permissão e rodar build com Maven
-        run: |
-          chmod +x mvnw
-          ./mvnw clean test-compile
+      - name: Rodar build com Maven
+        run: mvn clean test-compile
 
   build-frontend:
     name: Build Front-end
