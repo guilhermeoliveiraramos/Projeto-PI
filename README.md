@@ -1,6 +1,6 @@
 # 🚀 Projeto Integrador (PI) — Monitoramento de Produção Industrial
 
-[![CI - Build e Validação](https://github.com)](https://github.com)
+
 
 ## 📚 Sobre o Projeto
 O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de Dados, banco de dados relacional e infraestrutura em nuvem em uma plataforma para monitoramento e análise de indicadores industriais de produção e vulcanização de pneus.
