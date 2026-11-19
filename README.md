@@ -5,7 +5,7 @@
 ## 📚 Sobre o Projeto
 O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de Dados, banco de dados relacional e infraestrutura em nuvem em uma plataforma para monitoramento e análise de indicadores industriais de produção e vulcanização de pneus.
 
-🌐 **Acesse a aplicação online (AWS S3):** [http://amazonaws.com](http://amazonaws.com)
+🌐 **Acesse a aplicação online (AWS S3):** [[http://amazonaws.com](http://pifront.s3-website-us-east-1.amazonaws.com)]
 
 > ⚠️ **Observação sobre disponibilidade:** Este projeto utiliza uma conta de estudante (**AWS Academy**). Por isso, os serviços **Amazon EC2** (back-end) e **Amazon RDS** (banco de dados) não permanecem ligados 24 horas por dia, ficando ativos apenas durante os períodos de testes e apresentações do laboratório.
 
