@@ -1,0 +1,20 @@
+# Pastas de build e cache local
+target/
+.mvn/
+
+# Variáveis de ambiente com senhas reais (nunca embutir na imagem)
+.env
+*.env
+
+# Arquivos de configuração de IDE e sistema
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Logs e arquivos do Git
+*.log
+.git/
+.gitignore
+Dockerfile
+.dockerignore
