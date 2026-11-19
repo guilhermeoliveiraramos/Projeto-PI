@@ -23,8 +23,10 @@ public class CorsConfig {
                                 "GET",
                                 "POST",
                                 "PUT",
-                                "DELETE"
-                        );
+                                "DELETE",
+                                "OPTIONS"
+                        )
+                        .allowedHeaders("*");
 
             }
 
