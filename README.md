@@ -1,11 +1,9 @@
 # 🚀 Projeto Integrador (PI) — Monitoramento de Produção Industrial
 
-
-
 ## 📚 Sobre o Projeto
 O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de Dados, banco de dados relacional e infraestrutura em nuvem em uma plataforma para monitoramento e análise de indicadores industriais de produção e vulcanização de pneus.
 
-🌐 **Acesse a aplicação online (AWS S3):** [[http://amazonaws.com](http://pifront.s3-website-us-east-1.amazonaws.com)]
+🌐 **Acesse a aplicação online (AWS S3):** [http://pifront.s3-website-us-east-1.amazonaws.com](http://pifront.s3-website-us-east-1.amazonaws.com)
 
 > ⚠️ **Observação sobre disponibilidade:** Este projeto utiliza uma conta de estudante (**AWS Academy**). Por isso, os serviços **Amazon EC2** (back-end) e **Amazon RDS** (banco de dados) não permanecem ligados 24 horas por dia, ficando ativos apenas durante os períodos de testes e apresentações do laboratório.
 
@@ -15,19 +13,19 @@ O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de 
 * Aplicar conceitos de engenharia de software e arquitetura em nuvem em uma solução prática.
 * Tratar e processar datasets industriais para geração de indicadores e dashboards.
 * Desenvolver uma API REST segura conectada a um banco de dados relacional.
-* Automatizar validações de build (CI) e preparar a aplicação para execução via contêineres (**Docker**).
+* Automatizar validações de build (CI) e orquestrar toda a aplicação em contêineres (**Docker & Docker Compose**).
 
 ---
 
 ## 🏗 Arquitetura da Aplicação
-A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Services (AWS)**:
+A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Services (AWS)** e totalmente conteinerizada para desenvolvimento e deploy:
 
-* **Front-end (Amazon S3):** Hospedagem estática da interface web, gráficos e filtros interativos.
+* **Front-end (Amazon S3 / Docker + Nginx):** Interface web desenvolvida em **React (Vite)**, servida estaticamente no S3 ou via Nginx em contêiner.
 * **Back-end (Amazon EC2 / Docker):** API REST desenvolvida em **Java 17 com Spring Boot** (`apiusuarios`), containerizada via Docker.
-* **Banco de Dados (Amazon RDS):** Instância **MySQL** (`projetopi`) contendo as tabelas relacionais (`usuario`, `pneus`, `arquivos`, `ciclos` e `medicoes`).
+* **Banco de Dados (Amazon RDS / MySQL 8.0):** Instância **MySQL** (`projetopi`) contendo as tabelas relacionais (`usuario`, `pneus`, `arquivos`, `ciclos` e `medicoes`).
 
 ```text
-[ Usuário ] ──► [ Front-end (Amazon S3) ] ──HTTP/REST──► [ Back-end Spring Boot (EC2 / Docker) ] ──JDBC──► [ MySQL (Amazon RDS) ]
+[ Usuário ] ──► [ Front-end (S3 / Nginx) ] ──HTTP/REST──► [ Back-end Spring Boot (EC2 / Docker) ] ──JDBC──► [ MySQL (RDS / Docker) ]
 ```
 
 ---
@@ -37,10 +35,10 @@ A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Servic
 | Tecnologia / Serviço | Aplicação no Projeto |
 | :--- | :--- |
 | **Java 17 & Spring Boot** | Desenvolvimento da API REST, regras de negócio e integração JPA/Hibernate |
-| **HTML, CSS & JavaScript** | Interface web, visualização de dados e consumo da API |
-| **MySQL & Amazon RDS** | Armazenamento relacional estruturado em nuvem |
+| **React (Vite) & JavaScript** | Interface web, visualização de dados e consumo da API |
+| **MySQL 8.0 & Amazon RDS** | Armazenamento relacional estruturado em nuvem e em contêiner |
 | **Amazon S3 & Amazon EC2** | Hospedagem do front-end e servidor de aplicação do back-end |
-| **Docker** | Containerização do back-end com *multi-stage build* e isolamento de ambiente |
+| **Docker & Docker Compose** | Orquestração completa dos serviços (*multi-stage build* para Java e React) |
 | **Git & GitHub Actions** | Controle de versão e pipeline de Integração Contínua (CI) |
 
 ---
@@ -49,19 +47,24 @@ A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Servic
 
 ```text
 Projeto-PI/
-├── .github/workflows/       # Pipeline de automação de build (CI)
-├── Frontend/                # Código-fonte da interface web
-├── backend/                 # Código-fonte da API Java / Spring Boot
-│   ├── src/                 # Controllers, Models, Repositories e Configurações
-│   ├── .dockerignore        # Arquivos ignorados no build da imagem Docker
-│   ├── .env.example         # Modelo de variáveis de ambiente (sem credenciais)
-│   ├── Dockerfile           # Receita multi-stage para containerização da API
-│   └── pom.xml              # Dependências Maven
-├── docs/                    # Documentação técnica e modelagem de dados
-│   ├── der-banco.png        # Diagrama Entidade-Relacionamento (DER)
-│   ├── dicionario-de-dados.md # Detalhamento das tabelas, colunas e tipos
-│   └── schema.sql           # Script SQL de criação das tabelas
-└── README.md                # Documentação geral do projeto
+├── .github/workflows/          # Pipeline de automação de build (CI)
+├── Frontend/                   # Código-fonte da interface web (React + Vite)
+│   ├── .dockerignore           # Arquivos ignorados no build da imagem do front-end
+│   ├── Dockerfile              # Build multi-stage (Node + Nginx)
+│   └── package.json            # Dependências do front-end
+├── backend/                    # Código-fonte da API Java / Spring Boot
+│   ├── src/                    # Controllers, Models, Repositories e Configurações
+│   ├── .dockerignore           # Arquivos ignorados no build da imagem da API
+│   ├── .env.example            # Modelo de variáveis de ambiente (sem credenciais)
+│   ├── Dockerfile              # Build multi-stage (Maven + Eclipse Temurin JRE)
+│   └── pom.xml                 # Dependências Maven
+├── docs/                       # Documentação técnica e modelagem de dados
+│   ├── der-banco.png           # Diagrama Entidade-Relacionamento (DER)
+│   ├── dicionario-de-dados.md  # Detalhamento das tabelas, colunas e tipos
+│   └── schema.sql              # Script SQL de criação das tabelas
+├── .gitignore                  # Proteção de credenciais (.env) e arquivos temporários
+├── docker-compose.yml          # Orquestração dos contêineres (Front-end, Back-end e Banco)
+└── README.md                   # Documentação geral do projeto
 ```
 
 * 📐 **[Acesse aqui o Dicionário de Dados e o Diagrama (DER)](./docs/dicionario-de-dados.md)**
@@ -69,39 +72,52 @@ Projeto-PI/
 
 ---
 
-## ⚙️ Como Executar o Projeto Localmente
+## 🐳 Como Executar o Projeto com Docker (Recomendado)
 
-### 1. Configurar o Banco de Dados
-Execute o script `./docs/schema.sql` em uma instância **MySQL** local ou em nuvem para criar a base `projetopi` e suas tabelas.
+Com o **Docker Desktop** instalado e em execução, você pode subir toda a aplicação (Front-end, Back-end e Banco MySQL com o `schema.sql` já carregado) com um único comando:
 
-### 2. Configurar as Variáveis de Ambiente
-Dentro da pasta `backend/`, copie o arquivo `.env.example` para um novo arquivo chamado `.env` e preencha com as credenciais do seu banco:
+### 1. Configurar as Variáveis de Ambiente
+Crie um arquivo chamado `.env` na **raiz do projeto** (ao lado do `docker-compose.yml`) com o seguinte conteúdo:
 
 ```env
-DB_URL=jdbc:mysql://localhost:3306/projetopi?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+DB_NAME=projetopi
 DB_USER=root
 DB_PASS=sua_senha_aqui
+DB_URL=jdbc:mysql://db:3306/projetopi?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 SERVER_PORT=8080
 ```
 
-### 3. Rodar o Back-end (via Maven ou Docker)
+### 2. Construir e Iniciar os Contêineres
+Na raiz do projeto (`Projeto-PI/`), execute:
 
-**Opção A — Via Maven:**
 ```bash
-cd backend
-./mvnw spring-boot:run
+docker compose up -d --build
 ```
 
-**Opção B — Via Docker:**
-```bash
-cd backend
-docker build -t projetopi-backend .
-docker run -d --name api-projetopi --env-file .env -p 8080:8080 projetopi-backend
-```
-A API estará disponível em `http://localhost:8080`.
+### 3. Acessar a Aplicação
+* **Front-end (Interface Web):** [http://localhost](http://localhost)
+* **Back-end (API REST):** [http://localhost:8080](http://localhost:8080)
 
-### 4. Rodar o Front-end
-Abra a pasta `Frontend/` e inicie o arquivo `index.html` no navegador (ou utilize a extensão *Live Server* no VS Code).
+### Comandos Úteis
+* **Acompanhar logs da API:** `docker logs -f projeto-pi-backend`
+* **Parar e remover os contêineres:** `docker compose down`
+
+---
+
+## ⚙️ Como Executar Manualmente (Sem Docker)
+
+1. **Banco de Dados:** Execute o script `./docs/schema.sql` em uma instância **MySQL** local ou na **AWS RDS**.
+2. **Back-end:** Dentro de `backend/`, crie o arquivo `.env` baseado no `.env.example` (apontando para `localhost` ou para o endpoint do RDS) e execute:
+   ```bash
+   cd backend
+   ./mvnw spring-boot:run
+   ```
+3. **Front-end:** Dentro de `Frontend/`, instale as dependências e inicie o servidor de desenvolvimento:
+   ```bash
+   cd Frontend
+   npm install
+   npm run dev
+   ```
 
 ---
 
