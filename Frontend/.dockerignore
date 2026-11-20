@@ -1,0 +1,19 @@
+# Dependências locais (o Docker vai instalar do zero com npm install)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Arquivos de build antigos
+dist
+build
+
+# Variáveis de ambiente e segredos
+.env
+*.env
+
+# Git e editores
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store

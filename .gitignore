@@ -1,39 +1,37 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
-.vscode/
-
+# ==========================================
+# SEGURANÇA E VARIÁVEIS DE AMBIENTE (NUNCA SUBIR)
+# ==========================================
 .env
-*backend/.env
+*.env
+!.env.example
+*.pem
+*.key
 
-.dockerignore
-*backend/.dockerignore
+# ==========================================
+# BACKEND (JAVA / MAVEN / SPRING)
+# ==========================================
+backend/target/
+!.mvn/wrapper/maven-wrapper.jar
+*.jar
+*.war
+*.ear
+*.log
+
+# ==========================================
+# FRONTEND (NODE / REACT / VITE)
+# ==========================================
+Frontend/node_modules/
+node_modules/
+Frontend/dist/
+Frontend/build/
+.npm
+.eslintcache
+
+# ==========================================
+# SISTEMA OPERACIONAL E IDEs (VS CODE / INTELLIJ)
+# ==========================================
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
