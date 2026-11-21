@@ -1,7 +1,7 @@
 # 🚀 Projeto Integrador (PI) — Monitoramento de Produção Industrial
 
 ## 📚 Sobre o Projeto
-O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de Dados, banco de dados relacional e infraestrutura em nuvem em uma plataforma para monitoramento e análise de indicadores industriais de produção e vulcanização de pneus.
+O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de Dados, banco de dados relacional e infraestrutura em nuvem em uma plataforma completa para monitoramento e análise de indicadores industriais de produção e vulcanização de pneus.
 
 🌐 **Acesse a aplicação online (AWS S3):** [http://pifront.s3-website-us-east-1.amazonaws.com](http://pifront.s3-website-us-east-1.amazonaws.com)
 
@@ -11,16 +11,35 @@ O **Projeto Integrador (PI)** reúne desenvolvimento web, back-end, Ciência de 
 
 ## 🎯 Objetivos
 * Aplicar conceitos de engenharia de software e arquitetura em nuvem em uma solução prática.
-* Tratar e processar datasets industriais para geração de indicadores e dashboards.
-* Desenvolver uma API REST segura conectada a um banco de dados relacional.
+* Importar, tratar e processar datasets industriais (`.csv`) em lote para geração de indicadores e dashboards interativos.
+* Desenvolver uma API REST segura com criptografia de senhas e controle de acesso baseado em cargos (**RBAC**).
 * Automatizar validações de build (CI) e orquestrar toda a aplicação em contêineres (**Docker & Docker Compose**).
+
+---
+
+## ✨ Principais Funcionalidades e Regras de Negócio
+
+* **Dashboard Analítico & Gráficos Interativos (Recharts):**
+  * Indicadores resumidos calculados no servidor (`/api/dashboard/resumo`) com filtros dinâmicos por **Lote de Arquivo CSV** e **Turno** (Manhã, Tarde e Noite).
+  * Gráficos comparativos de **Eficiência (%) vs. Cura (%)** por ciclo e **Temperatura (°C) vs. Consumo Energético (kWh)**.
+* **Importação em Lote de Arquivos CSV (`Batch Insert`):**
+  * Upload direto de planilhas de produção (5.000+ registros por arquivo) na aba **Arquivos**, criando e vinculando automaticamente modelos de pneus, ciclos de vulcanização e medições de sensores no **Amazon RDS**.
+* **Segurança, Privacidade (LGPD) e Controle de Acesso (RBAC):**
+  * **Criptografia BCrypt:** Todas as senhas são criptografadas com `BCryptPasswordEncoder` antes de serem salvas no banco.
+  * **Validação de Cadastro:** Exigência de formato válido de e-mail, unicidade, registro de gênero e faixa etária obrigatória (**entre 18 e 100 anos**).
+  * **Níveis de Permissão por Cargo:**
+    * **GERENTE:** Acesso irrestrito — importa arquivos CSV, gerencia e promove usuários, exclui registros em cascata e visualiza dados pessoais dos colaboradores.
+    * **ENGENHEIRO:** Visualiza dashboards e indicadores, cadastra novos modelos de pneus e registra ciclos de produção, sem permissão de exclusão ou acesso a dados sensíveis.
+    * **OPERADOR:** Perfil padrão atribuído automaticamente a todo novo auto-cadastro; acesso de consulta operacional com ocultação de dados pessoais de terceiros (e-mail, data de nascimento e sexo).
+* **Interface Responsiva & Tema Dinâmico:**
+  * Suporte completo para dispositivos móveis (menu hambúrguer e tabelas responsivas), paginação de registros e alternância entre **Modo Noturno** e **Modo Claro**.
 
 ---
 
 ## 🏗 Arquitetura da Aplicação
 A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Services (AWS)** e totalmente conteinerizada para desenvolvimento e deploy:
 
-* **Front-end (Amazon S3 / Docker + Nginx):** Interface web desenvolvida em **React (Vite)**, servida estaticamente no S3 ou via Nginx em contêiner.
+* **Front-end (Amazon S3 / Docker + Nginx):** Interface web desenvolvida em **React (Vite)** com **Recharts**, servida estaticamente no S3 ou via Nginx em contêiner.
 * **Back-end (Amazon EC2 / Docker):** API REST desenvolvida em **Java 17 com Spring Boot** (`apiusuarios`), containerizada via Docker.
 * **Banco de Dados (Amazon RDS / MySQL 8.0):** Instância **MySQL** (`projetopi`) contendo as tabelas relacionais (`usuario`, `pneus`, `arquivos`, `ciclos` e `medicoes`).
 
@@ -34,9 +53,10 @@ A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Servic
 
 | Tecnologia / Serviço | Aplicação no Projeto |
 | :--- | :--- |
-| **Java 17 & Spring Boot** | Desenvolvimento da API REST, regras de negócio e integração JPA/Hibernate |
-| **React (Vite) & JavaScript** | Interface web, visualização de dados e consumo da API |
-| **MySQL 8.0 & Amazon RDS** | Armazenamento relacional estruturado em nuvem e em contêiner |
+| **Java 17 & Spring Boot** | Desenvolvimento da API REST, regras de negócio, RBAC e integração JPA/Hibernate |
+| **Spring Security Crypto** | Criptografia de senhas com algoritmo **BCrypt** |
+| **React (Vite) & Recharts** | Interface web responsiva, paginação, tema claro/noturno e gráficos analíticos |
+| **MySQL 8.0 & Amazon RDS** | Armazenamento relacional estruturado em nuvem com inserção em lote |
 | **Amazon S3 & Amazon EC2** | Hospedagem do front-end e servidor de aplicação do back-end |
 | **Docker & Docker Compose** | Orquestração completa dos serviços (*multi-stage build* para Java e React) |
 | **Git & GitHub Actions** | Controle de versão e pipeline de Integração Contínua (CI) |
@@ -49,6 +69,12 @@ A solução utiliza uma arquitetura desacoplada hospedada na **Amazon Web Servic
 Projeto-PI/
 ├── .github/workflows/          # Pipeline de automação de build (CI)
 ├── Frontend/                   # Código-fonte da interface web (React + Vite)
+│   ├── src/
+│   │   ├── components/         # Componentes reutilizáveis (StatCard, Paginacao, Efeitos)
+│   │   ├── layouts/            # Layout principal e Navbar responsiva
+│   │   ├── pages/              # Telas (Login, Home, Pneus, Ciclos, Medicoes, Arquivos, Usuarios)
+│   │   ├── routes/             # Controle de rotas públicas e privadas
+│   │   └── services/           # Configuração do cliente HTTP (Axios)
 │   ├── .dockerignore           # Arquivos ignorados no build da imagem do front-end
 │   ├── Dockerfile              # Build multi-stage (Node + Nginx)
 │   └── package.json            # Dependências do front-end

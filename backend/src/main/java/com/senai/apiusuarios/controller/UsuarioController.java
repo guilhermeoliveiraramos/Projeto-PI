@@ -36,14 +36,31 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public List<Usuario> listar() {
+        
+    public List<Usuario> listar(
+            @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
+
+        boolean gerente = ehGerente(idUsuarioLogado);
         List<Usuario> usuarios = repository.findAll();
-        usuarios.forEach(u -> u.setSenha(null)); // Nunca expõe nem o hash na listagem
+
+        usuarios.forEach(u -> {
+            u.setSenha(null); // Nunca expõe senha
+            // Se NÃO for Gerente, oculta os dados pessoais dos funcionários
+            if (!gerente) {
+                u.setEmail(null);
+                u.setDataNascimento(null);
+                u.setSexo(null);
+            }
+        });
+
         return usuarios;
     }
 
-    @PostMapping
-    public ResponseEntity<?> criar(@RequestBody Usuario usuario) {
+     @PostMapping
+    public ResponseEntity<?> criar(
+            @RequestBody Usuario usuario,
+            @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
+
         // 1. Valida formato de e-mail
         if (usuario.getEmail() == null || !EMAIL_REGEX.matcher(usuario.getEmail()).matches()) {
             return ResponseEntity.badRequest().body("Formato de e-mail inválido!");
@@ -72,8 +89,12 @@ public class UsuarioController {
         }
         usuario.setSexo(usuario.getSexo().toUpperCase());
 
-        // 5. Atribui o cargo OPERADOR diretamente para todo novo usuário
-        usuario.setCargo(Cargo.OPERADOR.name());
+        // 5. Se quem está cadastrando for GERENTE, respeita o cargo escolhido; senão, força OPERADOR
+        if (ehGerente(idUsuarioLogado) && usuario.getCargo() != null && !usuario.getCargo().isBlank()) {
+            usuario.setCargo(usuario.getCargo().toUpperCase());
+        } else {
+            usuario.setCargo(Cargo.OPERADOR.name());
+        }
 
         // 6. Criptografa a senha e salva
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));

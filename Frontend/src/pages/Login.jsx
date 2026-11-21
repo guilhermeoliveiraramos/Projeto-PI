@@ -4,6 +4,7 @@ import api from '../services/api';
 
 export function Login() {
   const [modoCadastro, setModoCadastro] = useState(false);
+  const [tema, setTema] = useState(() => localStorage.getItem('tema') || 'dark');
 
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
@@ -14,6 +15,13 @@ export function Login() {
   const [carregando, setCarregando] = useState(false);
 
   const navigate = useNavigate();
+
+  function alternarTema() {
+    const novo = tema === 'dark' ? 'light' : 'dark';
+    setTema(novo);
+    document.documentElement.setAttribute('data-theme', novo);
+    localStorage.setItem('tema', novo);
+  }
 
   function calcularIdade(dataNasc) {
     const hoje = new Date();
@@ -37,8 +45,9 @@ export function Login() {
         return;
       }
 
-      if (!dataNascimento || calcularIdade(dataNascimento) < 18) {
-        setMensagem({ tipo: 'erro', texto: 'Cadastro permitido apenas para maiores de 18 anos!' });
+      const idade = dataNascimento ? calcularIdade(dataNascimento) : 0;
+      if (!dataNascimento || idade < 18 || idade > 100) {
+        setMensagem({ tipo: 'erro', texto: 'Cadastro permitido apenas para idades entre 18 e 100 anos!' });
         return;
       }
 
@@ -88,6 +97,23 @@ export function Login() {
       position: 'relative',
       zIndex: 1
     }}>
+      <button
+        type="button"
+        onClick={alternarTema}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          width: 'auto',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border-subtle)',
+          padding: '8px 16px',
+        }}
+      >
+        {tema === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Noturno'}
+      </button>
+
       <form
         key={modoCadastro ? 'cadastro' : 'login'}
         onSubmit={handleSubmit}
@@ -160,7 +186,7 @@ export function Login() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Data de Nascimento (+18)</label>
+              <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Data de Nascimento (18 a 100 anos)</label>
               <input
                 type="date"
                 value={dataNascimento}

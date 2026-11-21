@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 
 export function MainLayout() {
   const [menuAberto, setMenuAberto] = useState(false);
+  const [tema, setTema] = useState(() => localStorage.getItem('tema') || 'dark');
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Lê os dados do usuário salvos no login (nomeUsuario, cargo, email, idUsuario)
   const usuario = JSON.parse(localStorage.getItem('usuarioLogado') || '{}');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tema);
+    localStorage.setItem('tema', tema);
+  }, [tema]);
+
+  function alternarTema() {
+    setTema((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }
 
   function handleSair() {
     localStorage.removeItem('usuarioLogado');
@@ -27,13 +36,11 @@ export function MainLayout() {
     <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       <header className="futuristic-navbar">
         <div className="navbar-container">
-          {/* LOGO / TÍTULO */}
           <div className="navbar-brand">
             <span className="laser-dot"></span>
             <Link to="/inicio">PROJETO // PI</Link>
           </div>
 
-          {/* BOTÃO HAMBÚRGUER PARA CELULAR */}
           <button
             type="button"
             className="navbar-toggle"
@@ -43,7 +50,6 @@ export function MainLayout() {
             {menuAberto ? '✕' : '☰'}
           </button>
 
-          {/* LINKS DE NAVEGAÇÃO */}
           <nav className={`navbar-links ${menuAberto ? 'ativo' : ''}`}>
             {links.map((item) => {
               const ativo = location.pathname === item.path;
@@ -59,7 +65,6 @@ export function MainLayout() {
               );
             })}
 
-            {/* USUÁRIO LOGADO + BADGE DE CARGO + BOTÃO SAIR */}
             <div className="navbar-user">
               <div className="user-badge" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                 <span>
@@ -69,15 +74,14 @@ export function MainLayout() {
                 {usuario.cargo && (
                   <span
                     style={{
-                      backgroundColor: 'rgba(0, 229, 255, 0.12)',
-                      color: 'var(--laser-blue)',
-                      border: '1px solid var(--laser-blue)',
+                      backgroundColor: 'var(--accent-soft)',
+                      color: 'var(--accent-blue)',
+                      border: '1px solid var(--accent-blue)',
                       padding: '2px 10px',
                       borderRadius: '12px',
                       fontSize: '0.75rem',
                       fontWeight: 'bold',
                       textTransform: 'uppercase',
-                      boxShadow: '0 0 8px rgba(0, 229, 255, 0.3)',
                     }}
                   >
                     {usuario.cargo}
@@ -85,18 +89,34 @@ export function MainLayout() {
                 )}
               </div>
 
+              {/* BOTÃO DE TEMA NA BARRA SUPERIOR */}
+              <button
+                type="button"
+                onClick={alternarTema}
+                style={{
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-blue)',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '6px 14px',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {tema === 'dark' ? '☀️ Claro' : '🌙 Noturno'}
+              </button>
+
               <button type="button" onClick={handleSair} className="btn-logout">
                 Sair
               </button>
             </div>
           </nav>
         </div>
-
-        {/* FEIXE DE LASER INFERIOR */}
-        <div className="navbar-laser-border"></div>
       </header>
 
-      <main style={{ padding: '1.5rem', maxWidth: '1250px', margin: '0 auto' }}>
+      <main
+        key={location.pathname}
+        className="page-transition"
+        style={{ padding: '1.5rem', maxWidth: '1250px', margin: '0 auto' }}
+      >
         <Outlet />
       </main>
     </div>

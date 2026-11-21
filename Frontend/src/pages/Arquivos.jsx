@@ -4,25 +4,19 @@ import { alertaSucesso, alertaErro, confirmarExclusao } from '../utils/alertas';
 
 export function Arquivos() {
   const [arquivos, setArquivos] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [nomeArquivo, setNomeArquivo] = useState('');
-  const [idUsuario, setIdUsuario] = useState('');
+  const [arquivoSelecionado, setArquivoSelecionado] = useState(null);
+  const [importando, setImportando] = useState(false);
 
-  // Pega o usuário logado e verifica se é GERENTE
   const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
   const isGerente = usuarioLogado?.cargo?.toUpperCase() === 'GERENTE';
   const headersAuth = { 'X-User-Id': usuarioLogado?.idUsuario };
 
   async function carregarDados() {
     try {
-      const [resArquivos, resUsuarios] = await Promise.all([
-        api.get('/arquivos'),
-        api.get('/usuarios'),
-      ]);
-      setArquivos(resArquivos.data);
-      setUsuarios(resUsuarios.data);
+      const resArquivos = await api.get('/arquivos');
+      setArquivos(Array.isArray(resArquivos.data) ? resArquivos.data : []);
     } catch (erro) {
-      console.error('Erro ao carregar dados:', erro);
+      console.error('Erro ao carregar arquivos:', erro);
     }
   }
 
@@ -30,23 +24,32 @@ export function Arquivos() {
     carregarDados();
   }, []);
 
-  async function handleCadastrar(e) {
+  async function handleImportarCsv(e) {
     e.preventDefault();
+    if (!arquivoSelecionado) {
+      alertaErro('Selecione um arquivo .csv primeiro!');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', arquivoSelecionado);
+
+    setImportando(true);
     try {
-      await api.post(
-        '/arquivos',
-        {
-          nomeArquivo,
-          usuario: { idUsuario: Number(idUsuario) },
+      const resposta = await api.post('/arquivos/importar', formData, {
+        headers: {
+          ...headersAuth,
+          'Content-Type': 'multipart/form-data',
         },
-        { headers: headersAuth }
-      );
-      setNomeArquivo('');
-      setIdUsuario('');
+      });
+      setArquivoSelecionado(null);
+      e.target.reset();
       carregarDados();
-      alertaSucesso('Arquivo salvo!');
+      alertaSucesso(resposta.data || 'CSV importado com sucesso!');
     } catch (erro) {
-      alertaErro(erro.response?.data || 'Erro ao salvar arquivo. Verifique os campos e o backend.');
+      alertaErro(erro.response?.data || 'Erro ao importar arquivo CSV.');
+    } finally {
+      setImportando(false);
     }
   }
 
@@ -57,57 +60,59 @@ export function Arquivos() {
         carregarDados();
         alertaSucesso('Arquivo excluído!');
       } catch (erro) {
-        alertaErro(erro.response?.data || 'Sem permissão para excluir arquivo.');
+        alertaErro(erro.response?.data || 'Erro ao excluir arquivo.');
       }
     }
   }
 
   return (
     <div>
-      <h2>Gerenciamento de Arquivos</h2>
+      <h2>Gerenciamento de Arquivos CSV</h2>
 
-      {/* Formulário aparece apenas para GERENTE */}
       {isGerente && (
-        <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0', flexWrap: 'wrap' }}>
-          <input type="text" placeholder="Nome do arquivo (ex: relatorio_lote1.csv)" value={nomeArquivo} onChange={(e) => setNomeArquivo(e.target.value)} required style={{ padding: '8px', width: '280px' }} />
+        <form onSubmit={handleImportarCsv} style={{ display: 'flex', gap: '12px', alignItems: 'center', margin: '20px 0', flexWrap: 'wrap' }}>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => setArquivoSelecionado(e.target.files[0])}
+            required
+          />
 
-          <select value={idUsuario} onChange={(e) => setIdUsuario(e.target.value)} required style={{ padding: '8px' }}>
-            <option value="">Selecione o Usuário...</option>
-            {usuarios.map((u) => (
-              <option key={u.idUsuario} value={u.idUsuario}>
-                {u.nomeUsuario} ({u.cargo})
-              </option>
-            ))}
-          </select>
-
-          <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-            Salvar Arquivo
+          <button
+            type="submit"
+            disabled={importando}
+            style={{ backgroundColor: '#0284c7', color: 'white', border: 'none' }}
+          >
+            {importando ? 'Processando CSV (aguarde)...' : 'Importar CSV para o Banco'}
           </button>
         </form>
       )}
 
-      <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
+      <table>
         <thead>
-          <tr style={{ backgroundColor: '#e2e8f0' }}>
+          <tr>
             <th>ID</th>
             <th>Nome do Arquivo</th>
-            <th>Usuário Responsável</th>
+            <th>Importado por</th>
             <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {arquivos.map((arq) => (
             <tr key={arq.idArquivo}>
-              <td>{arq.idArquivo}</td>
+              <td>#{arq.idArquivo}</td>
               <td>{arq.nomeArquivo}</td>
-              <td>{arq.usuario?.nomeUsuario || arq.idUsuario}</td>
+              <td>{arq.usuario?.nomeUsuario || '-'}</td>
               <td>
                 {isGerente ? (
-                  <button onClick={() => handleExcluir(arq.idArquivo)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
+                  <button
+                    onClick={() => handleExcluir(arq.idArquivo)}
+                    style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '6px 14px' }}
+                  >
                     Excluir
                   </button>
                 ) : (
-                  <span style={{ color: '#64748b', fontSize: '13px' }}>Apenas visualização</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Apenas visualização</span>
                 )}
               </td>
             </tr>

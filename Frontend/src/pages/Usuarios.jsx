@@ -6,17 +6,19 @@ export function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [nomeUsuario, setNomeUsuario] = useState('');
   const [cargo, setCargo] = useState('OPERADOR');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [sexo, setSexo] = useState('HOMEM');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
-  // Lendo exatamente a mesma chave 'usuarioLogado' salva no Login.jsx
   const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
   const isGerente = usuarioLogado?.cargo?.toUpperCase() === 'GERENTE';
+  const headersAuth = { 'X-User-Id': usuarioLogado?.idUsuario };
 
   async function carregarUsuarios() {
     try {
-      const resposta = await api.get('/usuarios');
-      setUsuarios(resposta.data);
+      const resposta = await api.get('/usuarios', { headers: headersAuth });
+      setUsuarios(Array.isArray(resposta.data) ? resposta.data : []);
     } catch (erro) {
       console.error('Erro ao buscar usuários:', erro);
     }
@@ -28,16 +30,39 @@ export function Usuarios() {
 
   async function handleCadastrar(evento) {
     evento.preventDefault();
+
+    // Calcula idade antes de enviar (entre 18 e 100 anos)
+    const hoje = new Date();
+    const [ano, mes, dia] = dataNascimento.split('-').map(Number);
+    let idade = hoje.getFullYear() - ano;
+    if (hoje.getMonth() + 1 - mes < 0 || (hoje.getMonth() + 1 - mes === 0 && hoje.getDate() < dia)) {
+      idade--;
+    }
+
+    if (idade < 18 || idade > 100) {
+      alertaErro('A idade do usuário deve estar entre 18 e 100 anos!');
+      return;
+    }
+
     try {
-      await api.post('/usuarios', { nomeUsuario, cargo, email, senha });
+      await api.post(
+        '/usuarios',
+        { nomeUsuario, cargo, dataNascimento, sexo, email, senha },
+        { headers: headersAuth }
+      );
       setNomeUsuario('');
       setCargo('OPERADOR');
+      setDataNascimento('');
+      setSexo('HOMEM');
       setEmail('');
       setSenha('');
       carregarUsuarios();
       alertaSucesso('Usuário cadastrado!');
     } catch (erro) {
-      alertaErro('Erro ao cadastrar usuário. Verifique se o e-mail já existe.');
+      const msg = typeof erro.response?.data === 'string'
+        ? erro.response.data
+        : 'Erro ao cadastrar usuário. Verifique se o e-mail já está em uso.';
+      alertaErro(msg);
     }
   }
 
@@ -46,7 +71,7 @@ export function Usuarios() {
       await api.patch(
         `/usuarios/${id}/atribuir-gerente`,
         {},
-        { headers: { 'X-User-Id': usuarioLogado.idUsuario } }
+        { headers: headersAuth }
       );
       carregarUsuarios();
       alertaSucesso('Cargo de Gerente atribuído!');
@@ -58,9 +83,7 @@ export function Usuarios() {
   async function handleExcluir(id) {
     if (await confirmarExclusao()) {
       try {
-        await api.delete(`/usuarios/${id}`, {
-          headers: { 'X-User-Id': usuarioLogado.idUsuario },
-        });
+        await api.delete(`/usuarios/${id}`, { headers: headersAuth });
         carregarUsuarios();
         alertaSucesso('Usuário excluído!');
       } catch (erro) {
@@ -73,30 +96,46 @@ export function Usuarios() {
     <div>
       <h2>Gerenciamento de Usuários</h2>
 
-      <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0', flexWrap: 'wrap' }}>
-        <input type="text" placeholder="Nome do usuário" value={nomeUsuario} onChange={(e) => setNomeUsuario(e.target.value)} required style={{ padding: '8px' }} />
+      {isGerente && (
+        <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0', flexWrap: 'wrap' }}>
+          <input type="text" placeholder="Nome do usuário" value={nomeUsuario} onChange={(e) => setNomeUsuario(e.target.value)} required />
+          <input type="date" title="Data de Nascimento (18 a 100 anos)" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} required />
 
-        <select value={cargo} onChange={(e) => setCargo(e.target.value)} style={{ padding: '8px' }}>
-          <option value="OPERADOR">Operador</option>
-          <option value="ENGENHEIRO">Engenheiro</option>
-          <option value="GERENTE">Gerente</option>
-        </select>
+          <select value={sexo} onChange={(e) => setSexo(e.target.value)} required>
+            <option value="HOMEM">Homem</option>
+            <option value="MULHER">Mulher</option>
+            <option value="TRANS">Trans</option>
+          </select>
 
-        <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} required style={{ padding: '8px' }} />
-        <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-          Cadastrar
-        </button>
-      </form>
+          <select value={cargo} onChange={(e) => setCargo(e.target.value)}>
+            <option value="OPERADOR">Operador</option>
+            <option value="ENGENHEIRO">Engenheiro</option>
+            <option value="GERENTE">Gerente</option>
+          </select>
 
-      <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
+          <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} required />
+
+          <button type="submit" style={{ backgroundColor: '#0284c7', color: 'white', border: 'none' }}>
+            Cadastrar
+          </button>
+        </form>
+      )}
+
+      <table>
         <thead>
-          <tr style={{ backgroundColor: '#e2e8f0' }}>
+          <tr>
             <th>ID</th>
             <th>Nome</th>
             <th>Cargo</th>
-            <th>E-mail</th>
-            <th>Ações</th>
+            {isGerente && (
+              <>
+                <th>E-mail</th>
+                <th>Nascimento</th>
+                <th>Sexo</th>
+                <th>Ações</th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -105,31 +144,34 @@ export function Usuarios() {
               <td>{user.idUsuario}</td>
               <td>{user.nomeUsuario}</td>
               <td>{user.cargo}</td>
-              <td>{user.email}</td>
-              <td>
-                {isGerente ? (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {user.cargo?.toUpperCase() !== 'GERENTE' && (
-                      <button
-                        onClick={() => handleAtribuirGerente(user.idUsuario)}
-                        style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}
-                      >
-                        Tornar Gerente
-                      </button>
-                    )}
-                    {user.idUsuario !== usuarioLogado?.idUsuario && (
-                      <button
-                        onClick={() => handleExcluir(user.idUsuario)}
-                        style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}
-                      >
-                        Excluir
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <span style={{ color: '#64748b', fontSize: '13px' }}>Sem permissão</span>
-                )}
-              </td>
+
+              {isGerente && (
+                <>
+                  <td>{user.email || '-'}</td>
+                  <td>{user.dataNascimento || '-'}</td>
+                  <td>{user.sexo || '-'}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {user.cargo?.toUpperCase() !== 'GERENTE' && (
+                        <button
+                          onClick={() => handleAtribuirGerente(user.idUsuario)}
+                          style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '6px 12px' }}
+                        >
+                          Tornar Gerente
+                        </button>
+                      )}
+                      {user.idUsuario !== usuarioLogado?.idUsuario && (
+                        <button
+                          onClick={() => handleExcluir(user.idUsuario)}
+                          style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '6px 12px' }}
+                        >
+                          Excluir
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </>
+              )}
             </tr>
           ))}
         </tbody>

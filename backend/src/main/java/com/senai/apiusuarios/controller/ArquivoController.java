@@ -173,7 +173,8 @@ public class ArquivoController {
         return ResponseEntity.ok(repository.save(arquivo));
     }
 
-    @DeleteMapping("/{id}")
+       @DeleteMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<?> excluir(
             @PathVariable Long id,
             @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
@@ -181,7 +182,28 @@ public class ArquivoController {
         if (!ehGerente(idUsuarioLogado)) {
             return ResponseEntity.status(403).body("Sem permissão! Apenas Gerentes podem excluir arquivos.");
         }
+
+        // 1. Busca os ciclos vinculados a esse arquivo
+        List<Ciclo> ciclosDoArquivo = cicloRepository.findAll().stream()
+                .filter(c -> c.getArquivo() != null && id.equals(c.getArquivo().getIdArquivo()))
+                .toList();
+
+        java.util.Set<Long> idsCiclos = ciclosDoArquivo.stream()
+                .map(Ciclo::getIdCiclo)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 2. Apaga primeiro as medições desses ciclos
+        List<Medicao> medicoesParaApagar = medicaoRepository.findAll().stream()
+                .filter(m -> m.getCiclo() != null && idsCiclos.contains(m.getCiclo().getIdCiclo()))
+                .toList();
+        medicaoRepository.deleteAll(medicoesParaApagar);
+
+        // 3. Apaga os ciclos do arquivo
+        cicloRepository.deleteAll(ciclosDoArquivo);
+
+        // 4. Apaga o arquivo
         repository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 }
+
