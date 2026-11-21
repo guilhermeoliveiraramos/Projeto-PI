@@ -1,14 +1,24 @@
 package com.senai.apiusuarios.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.senai.apiusuarios.model.Ciclo;
 import com.senai.apiusuarios.model.Medicao;
-import com.senai.apiusuarios.model.Pneu;
-import com.senai.apiusuarios.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import com.senai.apiusuarios.repository.ArquivoRepository;
+import com.senai.apiusuarios.repository.CicloRepository;
+import com.senai.apiusuarios.repository.MedicaoRepository;
+import com.senai.apiusuarios.repository.PneuRepository;
+import com.senai.apiusuarios.repository.UsuarioRepository;
 
 @RestController
 @RequestMapping("/api/dashboard")
