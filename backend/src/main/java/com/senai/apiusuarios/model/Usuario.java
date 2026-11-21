@@ -1,5 +1,6 @@
 package com.senai.apiusuarios.model;
 
+import java.time.LocalDate;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -28,17 +29,25 @@ public class Usuario {
     @Column(name = "senha", length = 255, nullable = false)
     private String senha;
 
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
+
+    @Column(name = "sexo", length = 20)
+    private String sexo; // "HOMEM", "MULHER", "TRANS"
+
     // Construtor padrão (obrigatório pelo JPA)
     public Usuario() {
     }
 
     // Construtor completo
-    public Usuario(Long idUsuario, String nomeUsuario, String cargo, String email, String senha) {
+    public Usuario(Long idUsuario, String nomeUsuario, String cargo, String email, String senha, LocalDate dataNascimento, String sexo) {
         this.idUsuario = idUsuario;
         this.nomeUsuario = nomeUsuario;
         this.cargo = cargo;
         this.email = email;
         this.senha = senha;
+        this.dataNascimento = dataNascimento;
+        this.sexo = sexo;
     }
 
     // Getters e Setters
@@ -80,5 +89,21 @@ public class Usuario {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
+    }
+
+    public String getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(String sexo) {
+        this.sexo = sexo;
     }
 }

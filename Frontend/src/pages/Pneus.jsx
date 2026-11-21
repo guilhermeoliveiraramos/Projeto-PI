@@ -7,6 +7,13 @@ export function Pneus() {
   const [modeloPneu, setModeloPneu] = useState('');
   const [quantidade, setQuantidade] = useState('');
 
+  // Verifica permissões do usuário logado
+  const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
+  const cargo = usuarioLogado?.cargo?.toUpperCase() || 'OPERADOR';
+  const isGerente = cargo === 'GERENTE';
+  const podeCadastrar = cargo === 'GERENTE' || cargo === 'ENGENHEIRO';
+  const headersAuth = { 'X-User-Id': usuarioLogado?.idUsuario };
+
   async function carregarPneus() {
     try {
       const resposta = await api.get('/pneus');
@@ -23,27 +30,31 @@ export function Pneus() {
   async function handleCadastrar(evento) {
     evento.preventDefault();
     try {
-      await api.post('/pneus', {
-        modeloPneu,
-        quantidade: Number(quantidade),
-      });
+      await api.post(
+        '/pneus',
+        {
+          modeloPneu,
+          quantidade: Number(quantidade),
+        },
+        { headers: headersAuth }
+      );
       setModeloPneu('');
       setQuantidade('');
       carregarPneus();
       alertaSucesso('Pneu cadastrado!');
     } catch (erro) {
-      alertaErro('Não foi possível cadastrar o pneu.');
+      alertaErro(erro.response?.data || 'Não foi possível cadastrar o pneu.');
     }
   }
 
   async function handleExcluir(id) {
     if (await confirmarExclusao()) {
       try {
-        await api.delete(`/pneus/${id}`);
+        await api.delete(`/pneus/${id}`, { headers: headersAuth });
         carregarPneus();
         alertaSucesso('Pneu excluído!');
       } catch (erro) {
-        alertaErro('Este pneu está vinculado a um ciclo e não pode ser excluído.');
+        alertaErro(erro.response?.data || 'Este pneu está vinculado a um ciclo ou você não tem permissão.');
       }
     }
   }
@@ -59,13 +70,16 @@ export function Pneus() {
         </div>
       </div>
 
-      <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0' }}>
-        <input type="text" placeholder="Modelo do pneu (ex: Pirelli Scorpion)" value={modeloPneu} onChange={(e) => setModeloPneu(e.target.value)} required style={{ padding: '8px', width: '320px' }} />
-        <input type="number" min="1" placeholder="Quantidade" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} required style={{ padding: '8px', width: '130px' }} />
-        <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-          Cadastrar Pneu
-        </button>
-      </form>
+      {/* Formulário visível para GERENTE e ENGENHEIRO */}
+      {podeCadastrar && (
+        <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0' }}>
+          <input type="text" placeholder="Modelo do pneu (ex: Pirelli Scorpion)" value={modeloPneu} onChange={(e) => setModeloPneu(e.target.value)} required style={{ padding: '8px', width: '320px' }} />
+          <input type="number" min="1" placeholder="Quantidade" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} required style={{ padding: '8px', width: '130px' }} />
+          <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+            Cadastrar Pneu
+          </button>
+        </form>
+      )}
 
       <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
         <thead>
@@ -73,7 +87,7 @@ export function Pneus() {
             <th style={{ width: '80px' }}>ID</th>
             <th>Modelo do Pneu</th>
             <th style={{ width: '140px' }}>Quantidade</th>
-            <th style={{ width: '120px' }}>Ações</th>
+            <th style={{ width: '140px' }}>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -83,9 +97,13 @@ export function Pneus() {
               <td>{pneu.modeloPneu}</td>
               <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{pneu.quantidade}</td>
               <td style={{ textAlign: 'center' }}>
-                <button onClick={() => handleExcluir(pneu.idPneu)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
-                  Excluir
-                </button>
+                {isGerente ? (
+                  <button onClick={() => handleExcluir(pneu.idPneu)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
+                    Excluir
+                  </button>
+                ) : (
+                  <span style={{ color: '#64748b', fontSize: '13px' }}>Sem permissão</span>
+                )}
               </td>
             </tr>
           ))}

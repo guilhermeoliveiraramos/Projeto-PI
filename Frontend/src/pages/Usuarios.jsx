@@ -5,9 +5,13 @@ import { alertaSucesso, alertaErro, confirmarExclusao } from '../utils/alertas';
 export function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [nomeUsuario, setNomeUsuario] = useState('');
-  const [cargo, setCargo] = useState('');
+  const [cargo, setCargo] = useState('OPERADOR');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+
+  // Lendo exatamente a mesma chave 'usuarioLogado' salva no Login.jsx
+  const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
+  const isGerente = usuarioLogado?.cargo?.toUpperCase() === 'GERENTE';
 
   async function carregarUsuarios() {
     try {
@@ -27,7 +31,7 @@ export function Usuarios() {
     try {
       await api.post('/usuarios', { nomeUsuario, cargo, email, senha });
       setNomeUsuario('');
-      setCargo('');
+      setCargo('OPERADOR');
       setEmail('');
       setSenha('');
       carregarUsuarios();
@@ -37,14 +41,30 @@ export function Usuarios() {
     }
   }
 
+  async function handleAtribuirGerente(id) {
+    try {
+      await api.patch(
+        `/usuarios/${id}/atribuir-gerente`,
+        {},
+        { headers: { 'X-User-Id': usuarioLogado.idUsuario } }
+      );
+      carregarUsuarios();
+      alertaSucesso('Cargo de Gerente atribuído!');
+    } catch (erro) {
+      alertaErro(erro.response?.data || 'Sem permissão para atribuir cargo.');
+    }
+  }
+
   async function handleExcluir(id) {
     if (await confirmarExclusao()) {
       try {
-        await api.delete(`/usuarios/${id}`);
+        await api.delete(`/usuarios/${id}`, {
+          headers: { 'X-User-Id': usuarioLogado.idUsuario },
+        });
         carregarUsuarios();
         alertaSucesso('Usuário excluído!');
       } catch (erro) {
-        alertaErro('Não foi possível excluir o usuário.');
+        alertaErro(erro.response?.data || 'Não foi possível excluir o usuário.');
       }
     }
   }
@@ -55,7 +75,13 @@ export function Usuarios() {
 
       <form onSubmit={handleCadastrar} style={{ display: 'flex', gap: '10px', margin: '20px 0', flexWrap: 'wrap' }}>
         <input type="text" placeholder="Nome do usuário" value={nomeUsuario} onChange={(e) => setNomeUsuario(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="text" placeholder="Cargo (ex: Operador)" value={cargo} onChange={(e) => setCargo(e.target.value)} required style={{ padding: '8px' }} />
+
+        <select value={cargo} onChange={(e) => setCargo(e.target.value)} style={{ padding: '8px' }}>
+          <option value="OPERADOR">Operador</option>
+          <option value="ENGENHEIRO">Engenheiro</option>
+          <option value="GERENTE">Gerente</option>
+        </select>
+
         <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '8px' }} />
         <input type="password" placeholder="Senha" value={senha} onChange={(e) => setSenha(e.target.value)} required style={{ padding: '8px' }} />
         <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
@@ -81,9 +107,28 @@ export function Usuarios() {
               <td>{user.cargo}</td>
               <td>{user.email}</td>
               <td>
-                <button onClick={() => handleExcluir(user.idUsuario)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
-                  Excluir
-                </button>
+                {isGerente ? (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {user.cargo?.toUpperCase() !== 'GERENTE' && (
+                      <button
+                        onClick={() => handleAtribuirGerente(user.idUsuario)}
+                        style={{ backgroundColor: '#0284c7', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}
+                      >
+                        Tornar Gerente
+                      </button>
+                    )}
+                    {user.idUsuario !== usuarioLogado?.idUsuario && (
+                      <button
+                        onClick={() => handleExcluir(user.idUsuario)}
+                        style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}
+                      >
+                        Excluir
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <span style={{ color: '#64748b', fontSize: '13px' }}>Sem permissão</span>
+                )}
               </td>
             </tr>
           ))}

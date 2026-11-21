@@ -13,6 +13,11 @@ export function Medicoes() {
   const [tempoValvula, setTempoValvula] = useState('');
   const [idCiclo, setIdCiclo] = useState('');
 
+  // Pega o usuário logado e verifica se é GERENTE
+  const usuarioLogado = JSON.parse(localStorage.getItem('usuarioLogado'));
+  const isGerente = usuarioLogado?.cargo?.toUpperCase() === 'GERENTE';
+  const headersAuth = { 'X-User-Id': usuarioLogado?.idUsuario };
+
   async function carregarDados() {
     try {
       const [resMedicoes, resCiclos] = await Promise.all([
@@ -33,14 +38,18 @@ export function Medicoes() {
   async function handleCadastrar(e) {
     e.preventDefault();
     try {
-      await api.post('/medicoes', {
-        temperaturaC: Number(temperaturaC),
-        pressaoBar: Number(pressaoBar),
-        vibracaoMmS: Number(vibracaoMmS),
-        consumoKwh: Number(consumoKwh),
-        tempoValvula: Number(tempoValvula),
-        ciclo: { idCiclo: Number(idCiclo) },
-      });
+      await api.post(
+        '/medicoes',
+        {
+          temperaturaC: Number(temperaturaC),
+          pressaoBar: Number(pressaoBar),
+          vibracaoMmS: Number(vibracaoMmS),
+          consumoKwh: Number(consumoKwh),
+          tempoValvula: Number(tempoValvula),
+          ciclo: { idCiclo: Number(idCiclo) },
+        },
+        { headers: headersAuth }
+      );
 
       setTemperaturaC('');
       setPressaoBar('');
@@ -50,18 +59,18 @@ export function Medicoes() {
       carregarDados();
       alertaSucesso('Medição registrada!');
     } catch (erro) {
-      alertaErro('Erro ao cadastrar medição.');
+      alertaErro(erro.response?.data || 'Sem permissão para cadastrar medição.');
     }
   }
 
   async function handleExcluir(id) {
     if (await confirmarExclusao()) {
       try {
-        await api.delete(`/medicoes/${id}`);
+        await api.delete(`/medicoes/${id}`, { headers: headersAuth });
         carregarDados();
         alertaSucesso('Medição excluída!');
       } catch (erro) {
-        alertaErro('Erro ao excluir medição.');
+        alertaErro(erro.response?.data || 'Sem permissão para excluir medição.');
       }
     }
   }
@@ -70,26 +79,29 @@ export function Medicoes() {
     <div>
       <h2>Medições dos Ciclos</h2>
 
-      <form onSubmit={handleCadastrar} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', margin: '20px 0' }}>
-        <select value={idCiclo} onChange={(e) => setIdCiclo(e.target.value)} required style={{ padding: '8px' }}>
-          <option value="">Selecione o Ciclo...</option>
-          {ciclos.map((c) => (
-            <option key={c.idCiclo} value={c.idCiclo}>
-              Ciclo #{c.idCiclo} - {c.pneu?.modeloPneu || c.turno}
-            </option>
-          ))}
-        </select>
+      {/* Formulário aparece apenas para GERENTE */}
+      {isGerente && (
+        <form onSubmit={handleCadastrar} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', margin: '20px 0' }}>
+          <select value={idCiclo} onChange={(e) => setIdCiclo(e.target.value)} required style={{ padding: '8px' }}>
+            <option value="">Selecione o Ciclo...</option>
+            {ciclos.map((c) => (
+              <option key={c.idCiclo} value={c.idCiclo}>
+                Ciclo #{c.idCiclo} - {c.pneu?.modeloPneu || c.turno}
+              </option>
+            ))}
+          </select>
 
-        <input type="number" step="0.01" placeholder="Temperatura (°C)" value={temperaturaC} onChange={(e) => setTemperaturaC(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="number" step="0.01" placeholder="Pressão (bar)" value={pressaoBar} onChange={(e) => setPressaoBar(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="number" step="0.01" placeholder="Vibração (mm/s)" value={vibracaoMmS} onChange={(e) => setVibracaoMmS(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="number" step="0.01" placeholder="Consumo (kWh)" value={consumoKwh} onChange={(e) => setConsumoKwh(e.target.value)} required style={{ padding: '8px' }} />
-        <input type="number" step="0.01" placeholder="Tempo Válvula" value={tempoValvula} onChange={(e) => setTempoValvula(e.target.value)} required style={{ padding: '8px' }} />
+          <input type="number" step="0.01" placeholder="Temperatura (°C)" value={temperaturaC} onChange={(e) => setTemperaturaC(e.target.value)} required style={{ padding: '8px' }} />
+          <input type="number" step="0.01" placeholder="Pressão (bar)" value={pressaoBar} onChange={(e) => setPressaoBar(e.target.value)} required style={{ padding: '8px' }} />
+          <input type="number" step="0.01" placeholder="Vibração (mm/s)" value={vibracaoMmS} onChange={(e) => setVibracaoMmS(e.target.value)} required style={{ padding: '8px' }} />
+          <input type="number" step="0.01" placeholder="Consumo (kWh)" value={consumoKwh} onChange={(e) => setConsumoKwh(e.target.value)} required style={{ padding: '8px' }} />
+          <input type="number" step="0.01" placeholder="Tempo Válvula" value={tempoValvula} onChange={(e) => setTempoValvula(e.target.value)} required style={{ padding: '8px' }} />
 
-        <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-          Registrar Medição
-        </button>
-      </form>
+          <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+            Registrar Medição
+          </button>
+        </form>
+      )}
 
       <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
         <thead>
@@ -115,9 +127,13 @@ export function Medicoes() {
               <td>{m.consumoKwh}</td>
               <td>{m.tempoValvula}</td>
               <td>
-                <button onClick={() => handleExcluir(m.idMedicao)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
-                  Excluir
-                </button>
+                {isGerente ? (
+                  <button onClick={() => handleExcluir(m.idMedicao)} style={{ backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>
+                    Excluir
+                  </button>
+                ) : (
+                  <span style={{ color: '#64748b', fontSize: '13px' }}>Apenas visualização</span>
+                )}
               </td>
             </tr>
           ))}

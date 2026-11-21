@@ -1,8 +1,11 @@
 package com.senai.apiusuarios.controller;
 
+import com.senai.apiusuarios.model.Cargo;
 import com.senai.apiusuarios.model.Medicao;
 import com.senai.apiusuarios.repository.MedicaoRepository;
+import com.senai.apiusuarios.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +17,18 @@ public class MedicaoController {
     @Autowired
     private MedicaoRepository repository;
 
-    // Listar todas as medições coletadas
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    // Apenas GERENTE pode criar, editar ou excluir medições
+    private boolean ehGerente(Long idUsuarioLogado) {
+        if (idUsuarioLogado == null) return false;
+        return usuarioRepository.findById(idUsuarioLogado)
+                .map(u -> u.getCargo() != null && u.getCargo().equalsIgnoreCase(Cargo.GERENTE.name()))
+                .orElse(false);
+    }
+
+    // Listar todas as medições coletadas (todos podem ver)
     @GetMapping
     public List<Medicao> listar() {
         return repository.findAll();
@@ -22,8 +36,15 @@ public class MedicaoController {
 
     // Salvar uma nova medição de sensores
     @PostMapping
-    public Medicao criar(@RequestBody Medicao medicao) {
-        return repository.save(medicao);
+    public ResponseEntity<?> criar(
+            @RequestBody Medicao medicao,
+            @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
+
+        if (!ehGerente(idUsuarioLogado)) {
+            return ResponseEntity.status(403).body("Sem permissão! Apenas Gerentes podem registrar medições.");
+        }
+
+        return ResponseEntity.ok(repository.save(medicao));
     }
 
     // Buscar os dados de uma medição específica pelo ID
@@ -35,14 +56,30 @@ public class MedicaoController {
 
     // Atualizar dados de uma medição existente
     @PutMapping("/{id}")
-    public Medicao atualizar(@PathVariable Long id, @RequestBody Medicao medicao) {
-        medicao.setIdMedicao(id); // Alinhado com a nomenclatura idMedicao do modelo
-        return repository.save(medicao);
+    public ResponseEntity<?> atualizar(
+            @PathVariable Long id,
+            @RequestBody Medicao medicao,
+            @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
+
+        if (!ehGerente(idUsuarioLogado)) {
+            return ResponseEntity.status(403).body("Sem permissão! Apenas Gerentes podem editar medições.");
+        }
+
+        medicao.setIdMedicao(id);
+        return ResponseEntity.ok(repository.save(medicao));
     }
 
     // Deletar o registro de uma medição
     @DeleteMapping("/{id}")
-    public void excluir(@PathVariable Long id) {
+    public ResponseEntity<?> excluir(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-User-Id", required = false) Long idUsuarioLogado) {
+
+        if (!ehGerente(idUsuarioLogado)) {
+            return ResponseEntity.status(403).body("Sem permissão! Apenas Gerentes podem excluir medições.");
+        }
+
         repository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }

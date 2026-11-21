@@ -1,4 +1,3 @@
-
 package com.senai.apiusuarios.config;
 
 import org.springframework.context.annotation.Bean;
@@ -23,6 +22,7 @@ public class CorsConfig {
                                 "GET",
                                 "POST",
                                 "PUT",
+                                "PATCH",
                                 "DELETE",
                                 "OPTIONS"
                         )

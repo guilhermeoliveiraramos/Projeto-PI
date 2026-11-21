@@ -35,3 +35,6 @@ Frontend/build/
 *.iml
 .DS_Store
 Thumbs.db
+
+#docker 
+*.dockerignore

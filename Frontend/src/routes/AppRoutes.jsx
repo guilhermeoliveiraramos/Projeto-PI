@@ -7,6 +7,7 @@ import { Pneus } from '../pages/Pneus';
 import { Ciclos } from '../pages/Ciclos';
 import { Medicoes } from '../pages/Medicoes';
 import { Arquivos } from '../pages/Arquivos';
+import { Efeitos } from '../components/Efeitos';
 
 // Componente que verifica se existe um usuário salvo no navegador
 function RotaPrivada({ children }) {
@@ -17,6 +18,9 @@ function RotaPrivada({ children }) {
 export function AppRoutes() {
   return (
     <HashRouter>
+      {/* Fica aqui dentro para o useLocation() funcionar e detectar a tela de Login */}
+      <Efeitos />
+
       <Routes>
         {/* Rota inicial e rota /login abrem a tela de Login */}
         <Route path="/" element={<Login />} />

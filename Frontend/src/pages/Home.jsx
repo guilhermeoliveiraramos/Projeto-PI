@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
 import api from '../services/api';
 import { StatCard } from '../components/StatCard';
 
@@ -45,7 +57,7 @@ export function Home() {
   }, []);
 
   if (carregando) {
-    return <p style={{ fontSize: '1.1rem', color: '#475569' }}>Carregando indicadores...</p>;
+    return <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Carregando indicadores...</p>;
   }
 
   const ciclosFiltrados = dadosBrutos.ciclos.filter((c) => {
@@ -75,20 +87,17 @@ export function Home() {
 
   return (
     <div>
+      {/* CABEÇALHO E FILTROS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <h2 style={{ color: '#0f172a' }}>Dashboard de Produção</h2>
-          <p style={{ color: '#64748b', fontSize: '0.95rem' }}>
+          <h2 style={{ color: 'var(--text-primary)' }}>Dashboard de Produção</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginTop: '4px' }}>
             Filtre por lote de arquivo CSV ou turno para analisar os indicadores.
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <select
-            value={filtroArquivo}
-            onChange={(e) => setFiltroArquivo(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
-          >
+          <select value={filtroArquivo} onChange={(e) => setFiltroArquivo(e.target.value)}>
             <option value="TODOS">Todos os Arquivos (CSV)</option>
             {dadosBrutos.arquivos.map((arq) => (
               <option key={arq.idArquivo} value={String(arq.idArquivo)}>
@@ -97,11 +106,7 @@ export function Home() {
             ))}
           </select>
 
-          <select
-            value={filtroTurno}
-            onChange={(e) => setFiltroTurno(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white' }}
-          >
+          <select value={filtroTurno} onChange={(e) => setFiltroTurno(e.target.value)}>
             <option value="TODOS">Todos os Turnos</option>
             <option value="Manhã">Turno: Manhã</option>
             <option value="Tarde">Turno: Tarde</option>
@@ -110,6 +115,7 @@ export function Home() {
         </div>
       </div>
 
+      {/* CARTÕES DE INDICADORES */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -123,36 +129,101 @@ export function Home() {
         <StatCard titulo="Arquivos Importados" valor={dadosBrutos.arquivos.length} subtexto={`${dadosBrutos.usuarios.length} usuários ativos`} cor="#7c3aed" destino="/arquivos" />
       </div>
 
+      {/* GRÁFICOS INTERATIVOS (RECHARTS) */}
       <div style={{
-        backgroundColor: 'white',
-        padding: '1.5rem',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        marginBottom: '2rem',
-        border: '1px dashed #cbd5e1',
-        textAlign: 'center',
-        color: '#64748b'
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2rem'
       }}>
-        <strong>Espaço Reservado para Gráficos (Recharts)</strong>
-        <p style={{ fontSize: '0.9rem', marginTop: '5px' }}>
-          Quando o CSV real for importado, podemos plugar aqui gráficos usando <code>ciclosFiltrados</code>.
-        </p>
+        {/* Gráfico 1: Eficiência e Cura por Ciclo */}
+        <div style={{
+          backgroundColor: 'var(--bg-card)',
+          padding: '1.5rem',
+          borderRadius: '18px',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Eficiência (%) por Ciclo</h3>
+          {ciclosFiltrados.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Sem ciclos para exibir no gráfico.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={ciclosFiltrados}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                <XAxis dataKey="idCiclo" stroke="var(--text-secondary)" tickFormatter={(id) => `#${id}`} />
+                <YAxis stroke="var(--text-secondary)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--bg-card)',
+                    borderColor: 'var(--border-subtle)',
+                    borderRadius: '10px',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="eficienciaPct" name="Eficiência (%)" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="curaPct" name="Cura (%)" fill="#10b981" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Gráfico 2: Temperatura e Consumo Energético */}
+        <div style={{
+          backgroundColor: 'var(--bg-card)',
+          padding: '1.5rem',
+          borderRadius: '18px',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)'
+        }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Temperatura (°C) vs Consumo (kWh)</h3>
+          {medicoesFiltradas.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Sem medições para exibir no gráfico.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={medicoesFiltradas}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                <XAxis dataKey="idMedicao" stroke="var(--text-secondary)" tickFormatter={(id) => `#${id}`} />
+                <YAxis stroke="var(--text-secondary)" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--bg-card)',
+                    borderColor: 'var(--border-subtle)',
+                    borderRadius: '10px',
+                    color: 'var(--text-primary)'
+                  }}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="temperaturaC" name="Temp. (°C)" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="consumoKwh" name="Consumo (kWh)" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
-      <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ color: '#0f172a' }}>Registros Recentes (Filtro Atual)</h3>
-          <Link to="/ciclos" style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' }}>
+      {/* TABELA DE REGISTROS RECENTES */}
+      <div style={{
+        backgroundColor: 'var(--bg-card)',
+        padding: '1.5rem',
+        borderRadius: '18px',
+        border: '1px solid var(--border-subtle)',
+        boxShadow: 'var(--shadow-card)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
+          <h3 style={{ color: 'var(--text-primary)' }}>Registros Recentes (Filtro Atual)</h3>
+          <Link to="/ciclos" style={{ color: 'var(--accent-blue)', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>
             Gerenciar todos →
           </Link>
         </div>
 
         {ciclosFiltrados.length === 0 ? (
-          <p style={{ color: '#64748b' }}>Nenhum ciclo encontrado para o filtro selecionado.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Nenhum ciclo encontrado para o filtro selecionado.</p>
         ) : (
-          <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table>
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', textAlign: 'left' }}>
+              <tr style={{ textAlign: 'left' }}>
                 <th>ID</th>
                 <th>Pneu</th>
                 <th>Arquivo CSV</th>
@@ -161,7 +232,7 @@ export function Home() {
                 <th>Eficiência</th>
               </tr>
             </thead>
-            <tbody>
+              <tbody>
               {ciclosFiltrados.slice(-5).reverse().map((ciclo) => (
                 <tr key={ciclo.idCiclo}>
                   <td>#{ciclo.idCiclo}</td>

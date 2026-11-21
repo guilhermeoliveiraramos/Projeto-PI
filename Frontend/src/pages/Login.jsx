@@ -3,34 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 export function Login() {
-  // Controla se a tela mostra o formulário de Login (false) ou Cadastro (true)
   const [modoCadastro, setModoCadastro] = useState(false);
 
   const [nomeUsuario, setNomeUsuario] = useState('');
-  const [cargo, setCargo] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [sexo, setSexo] = useState('HOMEM');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mensagem, setMensagem] = useState({ tipo: '', texto: '' });
+  const [carregando, setCarregando] = useState(false);
 
   const navigate = useNavigate();
+
+  function calcularIdade(dataNasc) {
+    const hoje = new Date();
+    const [ano, mes, dia] = dataNasc.split('-').map(Number);
+    let idade = hoje.getFullYear() - ano;
+    const diferencaMes = hoje.getMonth() + 1 - mes;
+    if (diferencaMes < 0 || (diferencaMes === 0 && hoje.getDate() < dia)) {
+      idade--;
+    }
+    return idade;
+  }
 
   async function handleSubmit(evento) {
     evento.preventDefault();
     setMensagem({ tipo: '', texto: '' });
 
     if (modoCadastro) {
-      // Valida o formato do e-mail antes de enviar
       const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
       if (!emailRegex.test(email)) {
         setMensagem({ tipo: 'erro', texto: 'Digite um e-mail válido (ex: nome@dominio.com)!' });
         return;
       }
 
-      // MODO CADASTRO (POST /api/usuarios)
+      if (!dataNascimento || calcularIdade(dataNascimento) < 18) {
+        setMensagem({ tipo: 'erro', texto: 'Cadastro permitido apenas para maiores de 18 anos!' });
+        return;
+      }
+
+      setCarregando(true);
       try {
         await api.post('/usuarios', {
           nomeUsuario,
-          cargo,
+          cargo: 'OPERADOR',
+          dataNascimento,
+          sexo,
           email,
           senha,
         });
@@ -39,25 +57,23 @@ export function Login() {
         setModoCadastro(false);
         setSenha('');
       } catch (err) {
-        console.error('Erro ao cadastrar:', err);
         const textoErro = typeof err.response?.data === 'string'
           ? err.response.data
           : err.response?.data?.message || 'Erro ao criar conta. Verifique se o e-mail já está em uso.';
         setMensagem({ tipo: 'erro', texto: textoErro });
+      } finally {
+        setCarregando(false);
       }
     } else {
-      // MODO LOGIN (POST /api/usuarios/login)
+      setCarregando(true);
       try {
         const resposta = await api.post('/usuarios/login', { email, senha });
-
-        // Salva o usuário logado no navegador
         localStorage.setItem('usuarioLogado', JSON.stringify(resposta.data));
-
-        // Redireciona para o painel principal
         navigate('/inicio');
       } catch (err) {
-        console.error('Erro no login:', err);
         setMensagem({ tipo: 'erro', texto: 'E-mail ou senha inválidos!' });
+      } finally {
+        setCarregando(false);
       }
     }
   }
@@ -68,36 +84,63 @@ export function Login() {
       justifyContent: 'center',
       alignItems: 'center',
       minHeight: '100vh',
-      backgroundColor: '#0f172a',
-      fontFamily: 'sans-serif',
-      padding: '1rem'
+      padding: '1.2rem',
+      position: 'relative',
+      zIndex: 1
     }}>
       <form
+        key={modoCadastro ? 'cadastro' : 'login'}
         onSubmit={handleSubmit}
+        className="page-transition"
         style={{
-          backgroundColor: 'white',
-          padding: '2.5rem',
-          borderRadius: '8px',
+          backgroundColor: 'var(--bg-card)',
+          padding: '2.4rem',
+          borderRadius: '24px',
           width: '100%',
           maxWidth: '420px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-card)',
+          backdropFilter: 'blur(16px)',
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem'
         }}
       >
-        <h2 style={{ textAlign: 'center', color: '#0f172a', marginBottom: '0.5rem' }}>
-          {modoCadastro ? 'Criar Nova Conta' : 'Acesso ao Projeto PI'}
-        </h2>
+        <div style={{ textAlign: 'center', marginBottom: '0.3rem' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: 'var(--accent-soft)',
+            color: 'var(--accent-blue)',
+            padding: '5px 14px',
+            borderRadius: '999px',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            marginBottom: '0.8rem'
+          }}>
+            <span className="laser-dot"></span>
+            Projeto Integrador
+          </div>
+
+          <h2 style={{ fontSize: '1.45rem' }}>
+            {modoCadastro ? 'Criar Nova Conta' : 'Bem-vindo de volta'}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
+            {modoCadastro ? 'Preencha seus dados para solicitar acesso' : 'Entre com suas credenciais para continuar'}
+          </p>
+        </div>
 
         {mensagem.texto && (
           <div style={{
-            backgroundColor: mensagem.tipo === 'erro' ? '#fee2e2' : '#dcfce7',
-            color: mensagem.tipo === 'erro' ? '#b91c1c' : '#15803d',
-            padding: '10px',
-            borderRadius: '4px',
+            backgroundColor: mensagem.tipo === 'erro' ? 'rgba(239, 68, 68, 0.14)' : 'rgba(16, 185, 129, 0.14)',
+            color: mensagem.tipo === 'erro' ? '#f87171' : '#34d399',
+            border: `1px solid ${mensagem.tipo === 'erro' ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+            padding: '10px 14px',
+            borderRadius: '12px',
             fontSize: '0.9rem',
-            textAlign: 'center'
+            textAlign: 'center',
+            fontWeight: '500'
           }}>
             {mensagem.texto}
           </div>
@@ -106,73 +149,75 @@ export function Login() {
         {modoCadastro && (
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Nome Completo</label>
+              <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Nome Completo</label>
               <input
                 type="text"
                 placeholder="Ex: Guilherme Silva"
                 value={nomeUsuario}
                 onChange={(e) => setNomeUsuario(e.target.value)}
                 required
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Cargo</label>
+              <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Data de Nascimento (+18)</label>
               <input
-                type="text"
-                placeholder="Ex: Engenheiro / Operador"
-                value={cargo}
-                onChange={(e) => setCargo(e.target.value)}
+                type="date"
+                value={dataNascimento}
+                onChange={(e) => setDataNascimento(e.target.value)}
                 required
-                style={{ padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
               />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Sexo</label>
+              <select value={sexo} onChange={(e) => setSexo(e.target.value)} required>
+                <option value="HOMEM">Homem</option>
+                <option value="MULHER">Mulher</option>
+                <option value="TRANS">Trans</option>
+              </select>
             </div>
           </>
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>E-mail</label>
+          <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>E-mail</label>
           <input
             type="email"
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
           />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <label style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Senha</label>
+          <label style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Senha</label>
           <input
             type="password"
             placeholder="••••••••"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             required
-            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
           />
         </div>
 
         <button
           type="submit"
+          disabled={carregando}
           style={{
             marginTop: '0.5rem',
             padding: '12px',
-            backgroundColor: '#0284c7',
-            color: 'white',
+            background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+            color: '#ffffff',
             border: 'none',
-            borderRadius: '4px',
-            fontWeight: 'bold',
-            fontSize: '1rem',
-            cursor: 'pointer'
+            fontWeight: '600',
+            boxShadow: '0 6px 20px rgba(2, 132, 199, 0.35)'
           }}
         >
-          {modoCadastro ? 'Cadastrar' : 'Entrar'}
+          {carregando ? 'Aguarde...' : modoCadastro ? 'Criar Conta' : 'Entrar'}
         </button>
 
-        {/* Botão para alternar entre Login e Cadastro */}
         <button
           type="button"
           onClick={() => {
@@ -180,16 +225,15 @@ export function Login() {
             setMensagem({ tipo: '', texto: '' });
           }}
           style={{
-            background: 'none',
+            background: 'transparent',
             border: 'none',
-            color: '#0284c7',
-            cursor: 'pointer',
-            textDecoration: 'underline',
-            fontSize: '0.9rem',
-            marginTop: '0.5rem'
+            color: 'var(--accent-blue)',
+            fontSize: '0.88rem',
+            fontWeight: '500',
+            padding: '6px'
           }}
         >
-          {modoCadastro ? 'Já tem uma conta? Faça login' : 'Não tem conta? Cadastre-se aqui'}
+          {modoCadastro ? 'Já tem uma conta? Fazer login' : 'Não tem conta? Cadastre-se aqui'}
         </button>
       </form>
     </div>
